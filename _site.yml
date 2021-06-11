@@ -1,0 +1,15 @@
+name: "サイトタイトル"
+navbar: 
+  title: "hoge"
+  left:
+    - text: "index"
+      href: index.html
+    - text: "Main Analysis"
+      href: main_analysis.html
+    - text: "Optional Anasysis"
+      href: optional_analysis.html
+    - text: "Author's Information"
+      href: author_information.html
+
+
+output_dir: "docs"
