@@ -1,20 +1,102 @@
 ---
-title: トップページ名
+title: "Main Analysis"
+author: "pauze_pauze"
+date: "2021年6月20日"
+output: html_document
 ---
+## **サマリー**
+- [『A/Bテスト実践ガイド　真のデータドリブンへ至る信用できる実験とは』](https://www.amazon.co.jp/dp/4048930796/)という本でSample Rate Mismatch(以下SRM)という考え方が紹介されていた
+- 具体的な作業としては、Treatment群とControl群のサンプル比率に関してt検定やχ二乗検定を行い、極端に低いp値が得られたらABテストの実装にバグがある可能性が高いと判断するもの
+- 試しにRでランダムな割り振りを複数回実施し、それぞれで母比率の差の検定とχ二乗検定を行ってp値の分布を見たところ、前者ではp値が0偏り、後者では一様分布に近い形になった
+- なぜこんなことが起きるのかよく分からないので有識者のコメントや意見がもらえるとありがたい(どっちを使うのが妥当なのかが分かるとすごくありがたいです)
 
-## index
+## **分析の背景**
+p値が小さい場合にバグの可能性が高いと考えるという記述に対し違和感を覚えたからです。
 
-### さんぷる
+具体的には、片方の群に割り振られなかったらもう片方の群に割り振られると考えると、Treatment群とControl群の対象の選ばれ方が独立でなくなり、片方の数の増加がもう片方の数の減少を招くので有意差が出やすくなるのではと思い検証しようと思いました。
 
-- ほげ
-- ふが
+## **シミュレーションの流れ**
+1. ABテストの母集団の数を設定(今回は10万)
+2. ランダムサンプリングと検定を複数回行う(今回は5000回)
+3. 各検定で得られたp値の分布をグラフ化する
 
-### さんぷるさんぷる
+※ランダムサンプリングのロジックは母比率の差の検定とχ二乗検定で同じものを使うため、純粋に検定の仕方が影響する形になります
 
-あめんぼあかいなあいうえお。あめんぼあかいなあいうえお。あああああああああああああああああああああああああああああ。
+## **実際のコード**
 
-あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-## ふがふが
+### **パッケージの読み込み**
+```{r install packeges}
+library(tidyverse)
+```
 
-ああああああああああああああああああああああああああああああああああ。あああああああああああああああああああ
+### **パターン1_母比率の差の検定**
+#### **変数の作成**
+```{r put numbers into variables p1}
+N <- 100000
+trial_times = 5000
+p1.vec <- rep(NA, times = trial_times)
+```
+
+#### **ランダム割り振りと検定を繰り返す**
+```{r random sampling p1}
+for (i in 1:trial_times) {
+  set.seed(i)
+  n1 <- sum(sample(c(0, 1), size = N, replace = TRUE, prob = c(0.5, 0.5)))
+  # print(n1)
+  t <- prop.test(c(n1, N - n1), c(N, N), correct = FALSE)
+  # print(t$p.value)
+  p1.vec[i] <- t$p.value
+}
+```
+
+
+#### *:検定の結果をヒストグラムにする**
+```{r}
+gragh_data <- p1.vec %>%
+  as_tibble() %>%
+  ggplot(aes(x = value))+
+  geom_histogram(binwidth = 0.05)+
+  labs(x = "p-value", y = "count", title = "histogram of p-value caluculated by prop test")+
+  theme_bw()
+plot(gragh_data)
+```
+
+
+### **パターン2_χ二乗検定**
+#### **変数の作成**
+```{r put numbers into variables p2}
+p2.vec <- rep(NA, times = trial_times)
+```
+
+#### **ランダム割り振りと検定を繰り返す**
+```{r random sampling p2}
+for (i in 1:trial_times) {
+  set.seed(i)
+  n1 <- sum(sample(c(0, 1), size = N, replace = TRUE, prob = c(0.5, 0.5)))
+  # print(n1)
+  t <- chisq.test(c(n1, N - n1), p = c(0.5, 0.5))
+  # print(t$p.value)
+  p2.vec[i] <- t$p.value
+}
+```
+
+
+#### **検定の結果をヒストグラムにする**
+```{r}
+gragh_data <- p2.vec %>%
+  as_tibble() %>%
+  ggplot(aes(x = value))+
+  geom_histogram(binwidth = 0.05)+
+  labs(x = "p-value", y = "count", title = "histogram of p-value caluculated by chi-square test")+
+  theme_bw()
+plot(gragh_data)
+```
+
+
+Githubの[リンク](https://github.com/pauze-pauze/trustworthy_online_controlled_experiments_a_practical_guide_to_a-b_testing_SRM)
+
+twitterのアカウントは[こちら](https://twitter.com/pauze_pauze)

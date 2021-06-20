@@ -9,9 +9,10 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
+<meta name="author" content="pauze_pauze" />
 
 
-<title>トップページ名</title>
+<title>Main Analysis</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -272,16 +273,7 @@ $(document).ready(function () {
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
-  <a href="index.html">index</a>
-</li>
-<li>
-  <a href="main_analysis.html">Main Analysis</a>
-</li>
-<li>
-  <a href="optional_analysis.html">Optional Anasysis</a>
-</li>
-<li>
-  <a href="author_information.html">Author's Information</a>
+  <a href="index.html">Main Analysis</a>
 </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
@@ -295,29 +287,120 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">トップページ名</h1>
+<h1 class="title toc-ignore">Main Analysis</h1>
+<h4 class="author">pauze_pauze</h4>
+<h4 class="date">2021年6月20日</h4>
 
 </div>
 
 
-<div id="index" class="section level2">
-<h2>index</h2>
-<div id="さんぷる" class="section level3">
-<h3>さんぷる</h3>
+<div id="サマリー" class="section level2">
+<h2><strong>サマリー</strong></h2>
 <ul>
-<li>ほげ</li>
-<li>ふが</li>
+<li><a href="https://www.amazon.co.jp/dp/4048930796/">『A/Bテスト実践ガイド　真のデータドリブンへ至る信用できる実験とは』</a>という本でSample Rate Mismatch(以下SRM)という考え方が紹介されていた</li>
+<li>具体的な作業としては、Treatment群とControl群のサンプル比率に関してt検定やχ二乗検定を行い、極端に低いp値が得られたらABテストの実装にバグがある可能性が高いと判断するもの</li>
+<li>試しにRでランダムな割り振りを複数回実施し、それぞれで母比率の差の検定とχ二乗検定を行ってp値の分布を見たところ、前者ではp値が0偏り、後者では一様分布に近い形になった</li>
+<li>なぜこんなことが起きるのかよく分からないので有識者のコメントや意見がもらえるとありがたい(どっちを使うのが妥当なのかが分かるとすごくありがたいです)</li>
 </ul>
 </div>
-<div id="さんぷるさんぷる" class="section level3">
-<h3>さんぷるさんぷる</h3>
-<p>あめんぼあかいなあいうえお。あめんぼあかいなあいうえお。あああああああああああああああああああああああああああああ。</p>
-<p>あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。</p>
+<div id="分析の背景" class="section level2">
+<h2><strong>分析の背景</strong></h2>
+<p>p値が小さい場合にバグの可能性が高いと考えるという記述に対し違和感を覚えたからです。</p>
+<p>具体的には、片方の群に割り振られなかったらもう片方の群に割り振られると考えると、Treatment群とControl群の対象の選ばれ方が独立でなくなり、片方の数の増加がもう片方の数の減少を招くので有意差が出やすくなるのではと思い検証しようと思いました。</p>
+</div>
+<div id="シミュレーションの流れ" class="section level2">
+<h2><strong>シミュレーションの流れ</strong></h2>
+<ol style="list-style-type: decimal">
+<li>ABテストの母集団の数を設定(今回は10万)</li>
+<li>ランダムサンプリングと検定を複数回行う(今回は5000回)</li>
+<li>各検定で得られたp値の分布をグラフ化する</li>
+</ol>
+<p>※ランダムサンプリングのロジックは母比率の差の検定とχ二乗検定で同じものを使うため、純粋に検定の仕方が影響する形になります</p>
+</div>
+<div id="実際のコード" class="section level2">
+<h2><strong>実際のコード</strong></h2>
+<div id="パッケージの読み込み" class="section level3">
+<h3><strong>パッケージの読み込み</strong></h3>
+<pre class="r"><code>library(tidyverse)</code></pre>
+<pre><code>## Warning: package &#39;tidyverse&#39; was built under R version 3.6.3</code></pre>
+<pre><code>## -- Attaching packages ------------------------------------------------------------------------------------------- tidyverse 1.3.0 --</code></pre>
+<pre><code>## √ ggplot2 3.3.2     √ purrr   0.3.4
+## √ tibble  3.0.3     √ dplyr   1.0.2
+## √ tidyr   1.1.2     √ stringr 1.4.0
+## √ readr   1.3.1     √ forcats 0.5.0</code></pre>
+<pre><code>## Warning: package &#39;ggplot2&#39; was built under R version 3.6.3</code></pre>
+<pre><code>## Warning: package &#39;tibble&#39; was built under R version 3.6.3</code></pre>
+<pre><code>## Warning: package &#39;tidyr&#39; was built under R version 3.6.3</code></pre>
+<pre><code>## Warning: package &#39;readr&#39; was built under R version 3.6.3</code></pre>
+<pre><code>## Warning: package &#39;purrr&#39; was built under R version 3.6.3</code></pre>
+<pre><code>## Warning: package &#39;dplyr&#39; was built under R version 3.6.3</code></pre>
+<pre><code>## Warning: package &#39;forcats&#39; was built under R version 3.6.3</code></pre>
+<pre><code>## -- Conflicts ---------------------------------------------------------------------------------------------- tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()</code></pre>
+</div>
+<div id="パターン1_母比率の差の検定" class="section level3">
+<h3><strong>パターン1_母比率の差の検定</strong></h3>
+<div id="変数の作成" class="section level4">
+<h4><strong>変数の作成</strong></h4>
+<pre class="r"><code>N &lt;- 100000
+trial_times = 5000
+p1.vec &lt;- rep(NA, times = trial_times)</code></pre>
+</div>
+<div id="ランダム割り振りと検定を繰り返す" class="section level4">
+<h4><strong>ランダム割り振りと検定を繰り返す</strong></h4>
+<pre class="r"><code>for (i in 1:trial_times) {
+  set.seed(i)
+  n1 &lt;- sum(sample(c(0, 1), size = N, replace = TRUE, prob = c(0.5, 0.5)))
+  # print(n1)
+  t &lt;- prop.test(c(n1, N - n1), c(N, N), correct = FALSE)
+  # print(t$p.value)
+  p1.vec[i] &lt;- t$p.value
+}</code></pre>
+</div>
+<div id="検定の結果をヒストグラムにする" class="section level4">
+<h4>*:検定の結果をヒストグラムにする**</h4>
+<pre class="r"><code>gragh_data &lt;- p1.vec %&gt;%
+  as_tibble() %&gt;%
+  ggplot(aes(x = value))+
+  geom_histogram(binwidth = 0.05)+
+  labs(x = &quot;p-value&quot;, y = &quot;count&quot;, title = &quot;histogram of p-value caluculated by prop test&quot;)+
+  theme_bw()
+plot(gragh_data)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
 </div>
 </div>
-<div id="ふがふが" class="section level2">
-<h2>ふがふが</h2>
-<p>ああああああああああああああああああああああああああああああああああ。あああああああああああああああああああ</p>
+<div id="パターン2_χ二乗検定" class="section level3">
+<h3><strong>パターン2_χ二乗検定</strong></h3>
+<div id="変数の作成-1" class="section level4">
+<h4>*変数の作成**</h4>
+<pre class="r"><code>p2.vec &lt;- rep(NA, times = trial_times)</code></pre>
+</div>
+<div id="ランダム割り振りと検定を繰り返す-1" class="section level4">
+<h4><strong>ランダム割り振りと検定を繰り返す</strong></h4>
+<pre class="r"><code>for (i in 1:trial_times) {
+  set.seed(i)
+  n1 &lt;- sum(sample(c(0, 1), size = N, replace = TRUE, prob = c(0.5, 0.5)))
+  # print(n1)
+  t &lt;- chisq.test(c(n1, N - n1), p = c(0.5, 0.5))
+  # print(t$p.value)
+  p2.vec[i] &lt;- t$p.value
+}</code></pre>
+</div>
+<div id="検定の結果をヒストグラムにする-1" class="section level4">
+<h4><strong>検定の結果をヒストグラムにする</strong></h4>
+<pre class="r"><code>gragh_data &lt;- p2.vec %&gt;%
+  as_tibble() %&gt;%
+  ggplot(aes(x = value))+
+  geom_histogram(binwidth = 0.05)+
+  labs(x = &quot;p-value&quot;, y = &quot;count&quot;, title = &quot;histogram of p-value caluculated by chi-square test&quot;)+
+  theme_bw()
+plot(gragh_data)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>Githubの<a href="https://github.com/pauze-pauze/trustworthy_online_controlled_experiments_a_practical_guide_to_a-b_testing_SRM">リンク</a></p>
+<p>twitterのアカウントは<a href="https://twitter.com/pauze_pauze">こちら</a></p>
+</div>
+</div>
 </div>
 
 

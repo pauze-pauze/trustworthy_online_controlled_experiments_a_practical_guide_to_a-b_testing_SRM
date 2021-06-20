@@ -1,20 +1,99 @@
 ---
-title: top page
+title: "Main Analysis"
+author: "pauze_pauze"
+date: "2021年6月12日"
+output: html_document
 ---
+## サマリー
 
-## index
+## 分析の背景
 
-### さんぷる
+## ゴール
 
-- ほげ
-- ふが
+## シミュレーションの流れ
 
-### さんぷるさんぷる
+## 実際のコード
 
-あめんぼあかいなあいうえお。あめんぼあかいなあいうえお。あああああああああああああああああああああああああああああ。
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。
+### パッケージの読み込み
 
-## ふがふが
+```{r install packeges}
+library(tidyverse)
+```
 
-ああああああああああああああああああああああああああああああああああ。あああああああああああああああああああ
+### 変数の作成
+```{r put numbers into variables}
+N <- 821588 + 815482
+N
+trial_times = 10000
+trial_times
+p1.vec <- rep(NA, times = trial_times)
+```
+
+### ランダム割り振りと検定を繰り返す
+```{r random sampling}
+for (i in 1:trial_times) {
+  set.seed(i)
+  n1 <- sum(sample(c(0, 1), size = N, replace = TRUE, prob = c(0.5, 0.5)))
+  # print(n1)
+  t <- prop.test(c(n1, N - n1), c(N, N), correct = FALSE)
+  # print(t$p.value)
+  p1.vec[i] <- t$p.value
+}
+```
+
+
+### 検定の結果をヒストグラムにする
+```{r}
+gragh_data <- p1.vec %>%
+  as_tibble() %>%
+  ggplot(aes(x = value))+
+  geom_histogram(binwidth = 0.005)+
+  labs(x = "p-value", y = "count", title = "histogram of p-value caluculated by SRM")+
+  theme_bw()
+plot(gragh_data)
+```
+
+
+### p値の値が一定以下になったケースの割合を算出
+#### 0.001以下ver
+```{r ratio of p-value under 0.001}
+cnt_under_0.001 <- p1.vec %>%
+  as_tibble() %>%
+  mutate(
+    under_0.001 = if_else(value < 0.001, 1, 0)
+  ) %>%
+  group_by(
+    under_0.001
+  ) %>%
+  summarise(
+    under_0.001_cnt = sum(under_0.001)
+  ) %>%
+  ungroup() %>%
+  .[2,2] %>%
+  as.numeric()
+cnt_under_0.001
+cnt_under_0.001 / trial_times
+```
+
+#### 0.05以下ver
+```{r ratio of p-value under 0.05}
+cnt_under_0.05 <- p1.vec %>%
+  as_tibble() %>%
+  mutate(
+    under_0.05 = if_else(value < 0.05, 1, 0)
+  ) %>%
+  group_by(
+    under_0.05
+  ) %>%
+  summarise(
+    under_0.05_cnt = sum(under_0.05)
+  ) %>%
+  .[2,2] %>%
+  as.numeric()
+cnt_under_0.05
+cnt_under_0.05 / trial_times
+```
